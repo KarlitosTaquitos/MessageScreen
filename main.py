@@ -1,4 +1,4 @@
-import sys, pygame, threading
+import sys, pygame, threading, random
 from pygame.locals import *
 pygame.init()
 
@@ -56,7 +56,8 @@ while 1:
 
     text = font.render(message, True, (255, 0, 0))
     textRect = text.get_rect()
-    textRect.center = (45, 90)
+    randSpot = (random.randint(0, width), random.randint(0, height))
+    textRect.center = randSpot
 
     outy = threading.Thread(target=display, args=(text, textRect, width, height))
     outy.daemon = True
