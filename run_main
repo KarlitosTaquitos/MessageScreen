@@ -1,2 +1,2 @@
 export DISPLAY=:0
-python /home/pi/Documents/MessageScreen/main.py
+./main.py &

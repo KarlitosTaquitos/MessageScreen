@@ -1,35 +1,37 @@
-import sys, pygame, threading, random
+#!/usr/bin/env python3
+
+import sys, pygame, threading, random, socket
 from pygame.locals import *
 pygame.init()
 
 #==================================================================================================
 
 def display(text, textRect, width, height):
-    while 1:
-	global stopThread
-	for event in pygame.event.get():
-	    if event.type == pygame.QUIT: sys.exit()
+	while 1:
+		global stopThread
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT: sys.exit()
 
-	if textRect.left < 0:
-            speed[0] *= -1
-            textRect.left = 0
-   	if textRect.right > width:
-            speed[0] *= -1
-            textRect.right = width
-   	if textRect.top < 0:
-       	    speed[1] *= -1
-            textRect.top = 0
- 	if textRect.bottom > height:
-            speed[1] *= -1
-            textRect.bottom = height
+		if textRect.left < 0:
+			speed[0] *= -1
+			textRect.left = 0
+		if textRect.right > width:
+			speed[0] *= -1
+			textRect.right = width
+		if textRect.top < 0:
+			speed[1] *= -1
+			textRect.top = 0
+		if textRect.bottom > height:
+			speed[1] *= -1
+			textRect.bottom = height
 
-   	textRect = textRect.move(speed)
+		textRect = textRect.move(speed)
 
-   	screen.fill((0, 0, 0))
- 	screen.blit(text, textRect)
-   	pygame.display.flip()
+		screen.fill((0, 0, 0))
+		screen.blit(text, textRect)
+		pygame.display.flip()
 	
-	if stopThread: break
+		if stopThread: break
 
 #==================================================================================================
 
@@ -51,21 +53,29 @@ stopThread = False
 
 threads = []
 
+PORT = 9876
+
 while 1:
-    message = raw_input("Send: ")
+	with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+		s.bind(('', PORT))
+		s.listen()
+		conn, addr = s.accept()
 
-    text = font.render(message, True, (255, 0, 0))
-    textRect = text.get_rect()
-    randSpot = (random.randint(0, width), random.randint(0, height))
-    textRect.center = randSpot
+		with conn:
+			message = conn.recv(1024)
 
-    outy = threading.Thread(target=display, args=(text, textRect, width, height))
-    outy.daemon = True
-    for thr in threads:
-	stopThread = True
-	thr.join()
-	stopThread = False
+			text = font.render(message, True, (255, 0, 0))
+			textRect = text.get_rect()
+			randSpot = (random.randint(0, width), random.randint(0, height))
+			textRect.center = randSpot
 
-    threads = []
-    outy.start()
-    threads.append(outy)
+			outy = threading.Thread(target=display, args=(text, textRect, width, height))
+			outy.daemon = True
+			for thr in threads:
+				stopThread = True
+				thr.join()
+				stopThread = False
+
+			threads = []
+			outy.start()
+			threads.append(outy)
