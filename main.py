@@ -57,6 +57,7 @@ PORT = 9876
 
 while 1:
 	with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		s.bind(('', PORT))
 		s.listen()
 		conn, addr = s.accept()
@@ -79,3 +80,4 @@ while 1:
 			threads = []
 			outy.start()
 			threads.append(outy)
+			conn.close()
