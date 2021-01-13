@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, pygame, threading, random, socket
+import sys, pygame, threading, random, socket, gspread, time
 from pygame.locals import *
 pygame.init()
 
@@ -35,6 +35,7 @@ def display(text, textRect, width, height):
 
 #==================================================================================================
 
+#Pygame screen stuff
 speed = [5, 5]
 
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -42,42 +43,46 @@ screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 font = pygame.font.Font("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 80)
 
 pygame.mouse.set_visible(False)
-#print pygame.font.get_fonts()
 
 width = screen.get_width()
 height = screen.get_height()
 
+#Thread stuff
 stopThread = False
-#inny = inputThread()
-#inny.run(width, height, font)
-
 threads = []
 
-PORT = 9876
+#Gspread stuff
+gc = gspread.oauth()
+source_sheet = gc.open("MessageScreen")
+source_wsheet = source_sheet.get_worksheet(0)
+message1 = source_wsheet.acell('A1').value
+
 
 while 1:
-	with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		s.bind(('', PORT))
-		s.listen()
-		conn, addr = s.accept()
+	#read from gspread
+	message2 = source_wsheet.acell('A1').value
 
-		with conn:
-			message = conn.recv(1024)
+	#if it's different kill the old thread and make a new one
+	if (message1 != message2):
+		print(message2)
 
-			text = font.render(message, True, (255, 0, 0))
-			textRect = text.get_rect()
-			randSpot = (random.randint(0, width), random.randint(0, height))
-			textRect.center = randSpot
+		text = font.render(message2, True, (255, 0, 0))
+		textRect = text.get_rect()
+		randSpot = (random.randint(0, width), random.randint(0, height))
+		textRect.center = randSpot
 
-			outy = threading.Thread(target=display, args=(text, textRect, width, height))
-			outy.daemon = True
-			for thr in threads:
-				stopThread = True
-				thr.join()
-				stopThread = False
+		outy = threading.Thread(target=display, args=(text, textRect, width, height))
+		outy.daemon = True
+		
+		for thr in threads:
+			stopThread = True
+			thr.join()
+			stopThread = False
 
-			threads = []
-			outy.start()
-			threads.append(outy)
-			conn.close()
+		threads = []
+		outy.start()
+		threads.append(outy)
+
+		message1 = message2
+
+	time.sleep(1)
